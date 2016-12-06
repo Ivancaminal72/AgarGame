@@ -12,6 +12,7 @@ function preload() {
 
 var player;
 var cursors;
+var food;
 
 function create() {
 
@@ -21,6 +22,7 @@ function create() {
 
     game.physics.startSystem(Phaser.Physics.P2JS);
 
+    //Player
     var bitmapdata = game.add.bitmapData(40,40);
     bitmapdata.ctx.fillStyle = '#ff9999';
     bitmapdata.ctx.beginPath();
@@ -29,6 +31,17 @@ function create() {
     bitmapdata.ctx.fill();
     player = game.add.sprite(game.world.centerX, game.world.centerY, bitmapdata);
 
+    // Food
+    var bmp = game.add.bitmapData(20,20);
+    bmp.ctx.fillStyle = '#fff242';
+    bmp.ctx.beginPath();
+    bmp.ctx.arc(10,10,10,0,2*Math.PI);
+    bmp.ctx.closePath();
+    bmp.ctx.fill();
+    food = game.add.group();
+    for(i=0; i<20; i++){
+        food.add(game.add.sprite(game.world.randomX, game.world.randomY, bmp));
+    }
     game.physics.p2.enable(player);
 
     player.body.fixedRotation = true;
