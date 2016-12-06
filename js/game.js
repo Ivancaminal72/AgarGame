@@ -20,7 +20,7 @@ function create() {
 
     game.world.setBounds(0, 0, 800, 600);
 
-    game.physics.startSystem(Phaser.Physics.P2JS);
+    game.physics.startSystem(Phaser.Physics.ARCADE);
 
     //Player
     var bitmapdata = game.add.bitmapData(40,40);
@@ -30,6 +30,8 @@ function create() {
     bitmapdata.ctx.closePath();
     bitmapdata.ctx.fill();
     player = game.add.sprite(game.world.centerX, game.world.centerY, bitmapdata);
+    game.physics.arcade.enable(player);
+    player.body.collideWorldBounds = true;
 
     // Food
     var bmp = game.add.bitmapData(20,20);
@@ -39,12 +41,11 @@ function create() {
     bmp.ctx.closePath();
     bmp.ctx.fill();
     food = game.add.group();
-    for(i=0; i<20; i++){
-        food.add(game.add.sprite(game.world.randomX, game.world.randomY, bmp));
+    food.enableBody = true;
+    //food.physicsBodyType = 3;
+    for(i=0; i<15; i++){
+        var particle = food.create(game.world.randomX, game.world.randomY, bmp);
     }
-    game.physics.p2.enable(player);
-
-    player.body.fixedRotation = true;
 
     cursors = game.input.keyboard.createCursorKeys();
 
@@ -58,15 +59,19 @@ function create() {
 
 function update() {
 
-    player.body.setZeroVelocity();
+    //player.body.setZeroVelocity();
+    game.physics.arcade.overlap(player, food, eatFood, null, this);
+
+    player.body.velocity.x = 0;
+    player.body.velocity.y = 0;
 
     if (cursors.up.isDown)
     {
-        player.body.moveUp(300)
+        player.body.velocity.y = -300;
     }
     else if (cursors.down.isDown)
     {
-        player.body.moveDown(300);
+        player.body.velocity.y = 300;
     }
 
     if (cursors.left.isDown)
@@ -75,7 +80,11 @@ function update() {
     }
     else if (cursors.right.isDown)
     {
-        player.body.moveRight(300);
+        player.body.velocity.x = 300;
+    }
+    else
+    {
+        player.animations.stop();
     }
 
 }
@@ -84,4 +93,9 @@ function render() {
 
     game.debug.text("Arrows to move.", 32, 32);
 
+}
+
+function eatFood (player, particle) {
+    // Removes the particle from the screen
+    particle.kill();
 }
