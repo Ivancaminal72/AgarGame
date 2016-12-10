@@ -9,11 +9,13 @@ function preload() {
     //game.load.image('player','assets/sprites/phaser-dude.png');
 
 }
-
+var playerRadious = 20;
+var foodRadious = 8;
+var velocityPlayer = 200;
 var player;
 var cursors;
 var food;
-
+var bmpFood;
 function create() {
 
     game.add.tileSprite(0, 0, 800, 600, 'background_white');
@@ -23,28 +25,31 @@ function create() {
     game.physics.startSystem(Phaser.Physics.ARCADE);
 
     //Player
-    var bitmapdata = game.add.bitmapData(40,40);
-    bitmapdata.ctx.fillStyle = '#ff9999';
-    bitmapdata.ctx.beginPath();
-    bitmapdata.ctx.arc(20,20,20,0,2*Math.PI);
-    bitmapdata.ctx.closePath();
-    bitmapdata.ctx.fill();
-    player = game.add.sprite(game.world.centerX, game.world.centerY, bitmapdata);
+    var bmpPlayer = game.add.bitmapData(2*playerRadious,2*playerRadious);
+    bmpPlayer.ctx.fillStyle = '#ff9999';
+    bmpPlayer.ctx.beginPath();
+    bmpPlayer.ctx.arc(playerRadious,playerRadious,playerRadious,0,2*Math.PI);
+    bmpPlayer.ctx.closePath();
+    bmpPlayer.ctx.fill();
+    player = game.add.sprite(game.world.centerX, game.world.centerY, bmpPlayer);
     game.physics.arcade.enable(player);
+    player.body.setCircle(playerRadious);
     player.body.collideWorldBounds = true;
 
     // Food
-    var bmp = game.add.bitmapData(20,20);
-    bmp.ctx.fillStyle = '#fff242';
-    bmp.ctx.beginPath();
-    bmp.ctx.arc(10,10,10,0,2*Math.PI);
-    bmp.ctx.closePath();
-    bmp.ctx.fill();
+    bmpFood = game.add.bitmapData(2*foodRadious,2*foodRadious);
+    bmpFood.ctx.fillStyle = '#fff242';
+    bmpFood.ctx.beginPath();
+    bmpFood.ctx.arc(foodRadious,foodRadious,foodRadious,0,2*Math.PI);
+    bmpFood.ctx.closePath();
+    bmpFood.ctx.fill();
+    //food = game.add.group(World,"food",false,true,Phaser.Physics.ARCADE);
     food = game.add.group();
-    food.enableBody = true;
-    //food.physicsBodyType = 3;
-    for(i=0; i<15; i++){
-        var particle = food.create(game.world.randomX, game.world.randomY, bmp);
+    food.enableBody=true;
+    food.physicsBodyType = Phaser.Physics.ARCADE;
+    for(i=0; i<30; i++){
+        var particle = food.create(game.world.randomX, game.world.randomY, bmpFood);
+        particle.body.setCircle(foodRadious);
     }
 
     cursors = game.input.keyboard.createCursorKeys();
@@ -67,20 +72,20 @@ function update() {
 
     if (cursors.up.isDown)
     {
-        player.body.velocity.y = -300;
+        player.body.velocity.y = -velocityPlayer;
     }
     else if (cursors.down.isDown)
     {
-        player.body.velocity.y = 300;
+        player.body.velocity.y = velocityPlayer;
     }
 
     if (cursors.left.isDown)
     {
-        player.body.velocity.x = -300;
+        player.body.velocity.x = -velocityPlayer;
     }
     else if (cursors.right.isDown)
     {
-        player.body.velocity.x = 300;
+        player.body.velocity.x = velocityPlayer;
     }
     else
     {
@@ -90,12 +95,31 @@ function update() {
 }
 
 function render() {
-
-    game.debug.text("Arrows to move.", 32, 32);
-
+    //game.debug.text("Arrows to move.", 32, 32);
 }
 
-function eatFood (player, particle) {
-    // Removes the particle from the screen
-    particle.kill();
+function eatFood (oldplayer, deadparticle) {
+    // Removes the particle
+    deadparticle.kill();
+
+    // Add random food particle
+    var particle = food.create(game.world.randomX, game.world.randomY, bmpFood);
+    particle.body.setCircle(foodRadious);
+
+    playerRadious += 1;
+
+    var bmpNewPlayer = game.add.bitmapData(2*playerRadious,2*playerRadious);
+    bmpNewPlayer.ctx.fillStyle = '#ff9999';
+    bmpNewPlayer.ctx.beginPath();
+    bmpNewPlayer.ctx.arc(playerRadious,playerRadious,playerRadious,0,2*Math.PI);
+    bmpNewPlayer.ctx.closePath();
+    bmpNewPlayer.ctx.fill();
+    var x = oldplayer.x;
+    var y = oldplayer.y;
+    oldplayer.kill();
+    var newplayer = game.add.sprite(x, y, bmpNewPlayer);
+    game.physics.arcade.enable(newplayer);
+    newplayer.body.setCircle(playerRadious);
+    newplayer.body.collideWorldBounds = true;
+    player = newplayer;
 }
