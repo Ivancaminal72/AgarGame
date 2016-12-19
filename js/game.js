@@ -6,17 +6,18 @@ var game = new Phaser.Game(800, 600, Phaser.CANVAS, 'agar_game', { preload: prel
 function preload() {
 
     game.load.image('background_white','img/white.png');
-    //game.load.image('player','assets/sprites/phaser-dude.png');
+    game.load.image('background_black','img/black.png');
 
 }
+
 var playerStartRadius = 20;
-var playerScale = 1.0;
 var foodRadius = 8;
 var velocityPlayer = 200;
 var player;
 var cursors;
 var food;
 var bmpFood;
+var score = 0;
 
 function create() {
 
@@ -71,7 +72,6 @@ function create() {
 
     Player.prototype.setRadius = function(radius){
         this.radio = radius;
-        //this.bola.resizeFrame(this.bola.key,2*this.radio,2*this.radio);
         this.bola.key.clear();
         this.bola.key.resize(2*this.radio,2*this.radio);
         this.bola.key.ctx.fillStyle = this.color;
@@ -142,7 +142,10 @@ function update() {
 }
 
 function render() {
-    //game.debug.text("Arrows to move.", 32, 32);
+
+    // Score
+    game.debug.text("Score: "+score.toString() , 32, 32, 'black');
+
 }
 var radio = playerStartRadius;
 function eatFood (oldplayer, deadparticle) {
@@ -153,27 +156,10 @@ function eatFood (oldplayer, deadparticle) {
     // Add random food particle
     var particle = food.create(game.world.randomX, game.world.randomY, bmpFood);
     particle.body.setCircle(foodRadius);
-
-    playerScale += 0.1;
-    /*bmpPlayer.ctx.beginPath();
-    bmpPlayer.ctx.arc(playerStartRadius,playerStartRadius,playerStartRadius,0,2*Math.PI);
-    bmpPlayer.ctx.closePath();
-    bmpPlayer.ctx.fill();*/
     radio+=1;
     console.log("NewScale: " + radio);
     player.setRadius(radio);
-    /*var bmpNewPlayer = game.add.bitmapData(2*playerStartRadius,2*playerStartRadius);
-    bmpNewPlayer.ctx.fillStyle = '#ff9999';
-    bmpNewPlayer.ctx.beginPath();
-    bmpNewPlayer.ctx.arc(playerStartRadius,playerStartRadius,playerStartRadius,0,2*Math.PI);
-    bmpNewPlayer.ctx.closePath();
-    bmpNewPlayer.ctx.fill();
-    var x = oldplayer.x;
-    var y = oldplayer.y;
-    oldplayer.kill();
-    var newplayer = game.add.sprite(x, y, bmpNewPlayer);
-    game.physics.arcade.enable(newplayer);
-    newplayer.body.setCircle(playerStartRadius);
-    newplayer.body.collideWorldBounds = true;
-    player = newplayer;*/
+
+    //  Add and update the score
+    score += 10;
 }
