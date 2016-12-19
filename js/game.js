@@ -20,11 +20,29 @@ var bmpFood;
 
 function create() {
 
-    game.add.tileSprite(0, 0, 800, 600, 'background_white');
+    game.add.tileSprite(0, 0, 1600, 1200, 'background_white');
 
-    game.world.setBounds(0, 0, 800, 600);
+    game.world.setBounds(0, 0, 1600, 1200);
 
     game.physics.startSystem(Phaser.Physics.ARCADE);
+
+    /*
+     var Barrera = function(pos_x, pos_y){
+     this.color_barrera = "#336699";
+     this.position = {x:pos_x, y:pos_y};
+     this.size = {w:20, h:20};
+     var bmpBarrera = game.add.bitmapData(2*this.size.w,2*this.size.h);
+     bmpBarrera.ctx.fillStyle = this.color_barrera;
+     bmpBarrera.ctx.fillRect(   this.position.x,
+     this.position.y,
+     this.size.w,
+     this.size.h);
+     this.barrera = game.add.sprite(game.world.centerX, game.world.centerY, bmpBarrera);
+     game.physics.arcade.enable(this.barrera);
+     this.barrera.body.collideWorldBounds = true;
+     };
+    var barrera = new Barrera(80/2,60/2);
+    barrera.barrera;*/
 
     //Player
     function Player(start_x, start_y, color) {
@@ -55,8 +73,7 @@ function create() {
         this.radio = radius;
         //this.bola.resizeFrame(this.bola.key,2*this.radio,2*this.radio);
         this.bola.key.clear();
-        this.bola.key.width = 2*this.radio;
-        this.bola.key.height = 2*this.radio;
+        this.bola.key.resize(2*this.radio,2*this.radio);
         this.bola.key.ctx.fillStyle = this.color;
         this.bola.key.ctx.beginPath();
         this.bola.key.ctx.arc(this.radio,this.radio,this.radio,0,2*Math.PI);
@@ -65,6 +82,7 @@ function create() {
         this.bola.body.setCircle(this.radio);
         this.bola.width = 2*this.radio;
         this.bola.height = 2*this.radio;
+        this.bola.key.update();
     };
 
     player = new Player(game.world.centerX,game.world.centerY,'#ff9999');
@@ -126,9 +144,8 @@ function update() {
 function render() {
     //game.debug.text("Arrows to move.", 32, 32);
 }
-var radio = playerStartRadius+1;
+var radio = playerStartRadius;
 function eatFood (oldplayer, deadparticle) {
-    console.log("NewScale: " + playerStartRadius);
 
     // Removes the particle
     deadparticle.kill();
@@ -143,6 +160,7 @@ function eatFood (oldplayer, deadparticle) {
     bmpPlayer.ctx.closePath();
     bmpPlayer.ctx.fill();*/
     radio+=1;
+    console.log("NewScale: " + radio);
     player.setRadius(radio);
     /*var bmpNewPlayer = game.add.bitmapData(2*playerStartRadius,2*playerStartRadius);
     bmpNewPlayer.ctx.fillStyle = '#ff9999';
