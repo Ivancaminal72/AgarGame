@@ -114,6 +114,15 @@ function create() {
 
 function update() {
 
+    if(score > 30){
+        game.state.add('level2', level2);
+        game.paused = true;
+        setTimeout(function() {
+            game.paused = false;
+            game.state.start('level2');
+        }, 2000);
+    }
+
     //player.body.setZeroVelocity();
     game.physics.arcade.overlap(player.bola, food, eatFood, null, this);
 
@@ -134,10 +143,6 @@ function update() {
     {
         player.setVelocityX(velocityPlayer);
     }
-    else
-    {
-        //player.animations.stop();
-    }
 
 }
 
@@ -145,6 +150,9 @@ function render() {
 
     // Score
     game.debug.text("Score: "+score.toString() , 32, 32, 'black');
+    if(score > 30){
+        game.debug.text("Loading Level 2" , 400, 300, 'black');
+    }
 
 }
 var radio = playerStartRadius;
