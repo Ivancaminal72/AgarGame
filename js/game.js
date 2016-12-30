@@ -18,12 +18,6 @@ socket.on('index', function (id) {
     console.log("socket new index: " + id.clientIndex);
     clientIndex=id.clientIndex;
 });
-socket.on('initFood', function (list) {
-    game.state.pause();
-    console.log(list[0]);
-    listFood=list;
-    createFood(); //Create the actual food that arrives from the server
-});
 
 
 function preload() {
@@ -101,6 +95,14 @@ function create() {
     //  0.1 is the amount of linear interpolation to use.
     //  The smaller the value, the smooth the camera (and the longer it takes to catch up)
     game.camera.follow(player.bola, Phaser.Camera.FOLLOW_LOCKON, 0.1, 0.1);
+    
+    socket.on('initFood', function (list) {
+        game.state.pause();
+        console.log(list[0]);
+        listFood=list;
+        createFood(); //Create the actual food that arrives from the server
+    });
+    
 }
 
 
@@ -171,7 +173,7 @@ function eatFood (oldplayer, deadparticle) {
     player.setRadius(radio);
 
     //  Add and update the score
-    score = (radio-19)*10;
+    score += 10;
 }
 
 function createFood() {
