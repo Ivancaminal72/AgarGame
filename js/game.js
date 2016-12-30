@@ -173,7 +173,7 @@ function eatFood (oldplayer, deadparticle) {
     player.setRadius(radio);
 
     //  Add and update the score
-    score += (radio-20) * 10;
+    score = (radio-20) * 10;
 }
 
 function createFood() {
