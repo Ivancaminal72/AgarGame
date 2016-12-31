@@ -18,7 +18,12 @@ socket.on('index', function (id) {
     console.log("socket new index: " + id.clientIndex);
     clientIndex=id.clientIndex;
 });
-
+socket.on('initFood', function (list) {
+    game.state.pause();
+    console.log(list[0]);
+    listFood=list;
+    createFood(); //Create the actual food that arrives from the server
+});
 
 function preload() {
     game.load.image('background_white','img/white.png');
@@ -45,8 +50,8 @@ function create() {
      game.physics.arcade.enable(this.barrera);
      this.barrera.body.collideWorldBounds = true;
      };
-    var barrera = new Barrera(80/2,60/2);
-    barrera.barrera;*/
+     var barrera = new Barrera(80/2,60/2);
+     barrera.barrera;*/
 
     //Player
     function Player(start_x, start_y, color) {
@@ -66,7 +71,7 @@ function create() {
     }
 
     Player.prototype.setVelocityX =  function(x){
-      this.bola.body.velocity.x = x;
+        this.bola.body.velocity.x = x;
     };
 
     Player.prototype.setVelocityY =  function(y){
@@ -88,6 +93,7 @@ function create() {
         this.bola.key.update();
     };
     player = new Player(game.world.centerX,game.world.centerY,'#ff9999');
+    socket.emit('player',player.bola.x,player.bola.y,player.radio);
     cursors = game.input.keyboard.createCursorKeys();
 
     //  Notice that the sprite doesn't have any momentum at all,
@@ -95,16 +101,9 @@ function create() {
     //  0.1 is the amount of linear interpolation to use.
     //  The smaller the value, the smooth the camera (and the longer it takes to catch up)
     game.camera.follow(player.bola, Phaser.Camera.FOLLOW_LOCKON, 0.1, 0.1);
-    
-    socket.on('initFood', function (list) {
-        game.state.pause();
-        console.log(list[0]);
-        listFood=list;
-        createFood(); //Create the actual food that arrives from the server
-    });
-    
-}
+    game.world.bringToTop(food);
 
+}
 
 function update() {
     if(game.time.now - actionTime > 1000) { //Check if position has changed every 1 second
@@ -118,7 +117,7 @@ function update() {
     }
 
 
-    if(score > 30){
+    if(score > 100){
         game.state.add('level2', level2);
         game.paused = true;
         setTimeout(function() {
@@ -129,6 +128,15 @@ function update() {
 
     //player.body.setZeroVelocity();
     game.physics.arcade.overlap(player.bola, food, eatFood, null, this);
+    socket.on('new_food', function(new_food,old_x,old_y){
+        console.log("New_food");
+        food.forEach(function(particle){
+            if(particle.x == old_x && particle.y == old_y){
+                particle.x = new_food.x;
+                particle.y = new_food.y;
+            }
+        });
+    });
 
     player.setVelocityX(0);
     player.setVelocityY(0);
@@ -142,9 +150,7 @@ function update() {
     if (cursors.left.isDown)
     {
         player.setVelocityX(-velocityPlayer);
-    }
-    else if (cursors.right.isDown)
-    {
+    } else if (cursors.right.isDown) {
         player.setVelocityX(velocityPlayer);
     }
 
@@ -154,7 +160,7 @@ function render() {
 
     // Score
     game.debug.text("Score: "+score.toString() , 32, 32, 'black');
-    if(score > 30){
+    if(score > 100){
         game.debug.text("Loading Level 2" , 400, 300, 'black');
     }
 
@@ -165,15 +171,15 @@ function eatFood (oldplayer, deadparticle) {
     // Removes the particle
     deadparticle.kill();
 
-    // Add random listFood particle
-    var particle = food.create(game.world.randomX, game.world.randomY, bmpFood);
-    particle.body.setCircle(foodRadius);
+    socket.emit('update_food', deadparticle.x, deadparticle.y);
+
     radio+=1;
     console.log("NewScale: " + radio);
     player.setRadius(radio);
 
     //  Add and update the score
     score = (radio-20) * 10;
+
 }
 
 function createFood() {

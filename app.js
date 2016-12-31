@@ -43,13 +43,22 @@ io.on('connection', function(socket){
     console.log('user index: ' + i);
     socket.emit('index',{clientIndex: i});
     socket.emit('initFood', listFood);
-    socket.emit('players', players);
-    socket.on('player', function (player) {
+    //socket.emit('players', players);
+    socket.on('player', function (x,y,radio) {
         var i = findIndex(socket.id);
-        players[i].position.x=player.x;
-        players[i].position.y=player.y;
-        players[i].radio=player.
-        console.log('x: '+ players[i].position.x + 'y: '+ players[i].position.y);
+        players[i].position.x=x;
+        players[i].position.y=y;
+        players[i].radio=radio;
+        console.log('x: '+ players[i].position.x + ' y: '+ players[i].position.y);
+    });
+    socket.on('update_food', function(x,y){
+        for (var i=0; i<listFood.length; i++){
+            if (listFood[i].x == x && listFood[i].y == y){
+                listFood[i].x = getRandomArbitrary(0,1600);
+                listFood[i].y = getRandomArbitrary(0,1200);
+            }
+            socket.broadcast.emit('new_food', listFood[i],x,y);
+        }
     });
     socket.on('disconnect', function(){
         console.log('user disconnected');
