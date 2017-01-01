@@ -223,3 +223,4 @@ function createFood() {
     }
     game.state.resume();
 }
+
