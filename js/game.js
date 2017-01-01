@@ -9,6 +9,47 @@ var food;
 var listFood =[];
 var bmpFood;
 var score = 0;
+var enemies;
+//Player
+function Player(start_x, start_y, color) {
+    this.radio = playerStartRadius;
+    this.color = color;
+    this.oldPosition = {x:start_x, y:start_y};
+    this.bmpPlayer = game.add.bitmapData(2*this.radio,2*this.radio);
+    this.bmpPlayer.ctx.fillStyle = this.color;
+    this.bmpPlayer.ctx.beginPath();
+    this.bmpPlayer.ctx.arc(this.radio,this.radio,this.radio,0,2*Math.PI);
+    this.bmpPlayer.ctx.closePath();
+    this.bmpPlayer.ctx.fill();
+    this.bola = game.add.sprite(start_x, start_y, this.bmpPlayer);
+    game.physics.arcade.enable(this.bola);
+    this.bola.body.setCircle(playerStartRadius);
+    this.bola.body.collideWorldBounds = true;
+    this.id = 0;
+}
+
+Player.prototype.setVelocityX =  function(x){
+    this.bola.body.velocity.x = x;
+};
+
+Player.prototype.setVelocityY =  function(y){
+    this.bola.body.velocity.y = y;
+};
+
+Player.prototype.setRadius = function(radius){
+    this.radio = radius;
+    this.bola.key.clear();
+    this.bola.key.resize(2*this.radio,2*this.radio);
+    this.bola.key.ctx.fillStyle = this.color;
+    this.bola.key.ctx.beginPath();
+    this.bola.key.ctx.arc(this.radio,this.radio,this.radio,0,2*Math.PI);
+    this.bola.key.ctx.closePath();
+    this.bola.key.ctx.fill();
+    this.bola.body.setCircle(this.radio);
+    this.bola.width = 2*this.radio;
+    this.bola.height = 2*this.radio;
+    this.bola.key.update();
+};
 
 //Communication socket io
 var socket = io();
@@ -53,47 +94,19 @@ function create() {
      var barrera = new Barrera(80/2,60/2);
      barrera.barrera;*/
 
-    //Player
-    function Player(start_x, start_y, color) {
-        this.radio = playerStartRadius;
-        this.color = color;
-        this.oldPosition = {x:start_x, y:start_y};
-        this.bmpPlayer = game.add.bitmapData(2*this.radio,2*this.radio);
-        this.bmpPlayer.ctx.fillStyle = this.color;
-        this.bmpPlayer.ctx.beginPath();
-        this.bmpPlayer.ctx.arc(this.radio,this.radio,this.radio,0,2*Math.PI);
-        this.bmpPlayer.ctx.closePath();
-        this.bmpPlayer.ctx.fill();
-        this.bola = game.add.sprite(start_x, start_y, this.bmpPlayer);
-        game.physics.arcade.enable(this.bola);
-        this.bola.body.setCircle(playerStartRadius);
-        this.bola.body.collideWorldBounds = true;
-    }
-
-    Player.prototype.setVelocityX =  function(x){
-        this.bola.body.velocity.x = x;
-    };
-
-    Player.prototype.setVelocityY =  function(y){
-        this.bola.body.velocity.y = y;
-    };
-
-    Player.prototype.setRadius = function(radius){
-        this.radio = radius;
-        this.bola.key.clear();
-        this.bola.key.resize(2*this.radio,2*this.radio);
-        this.bola.key.ctx.fillStyle = this.color;
-        this.bola.key.ctx.beginPath();
-        this.bola.key.ctx.arc(this.radio,this.radio,this.radio,0,2*Math.PI);
-        this.bola.key.ctx.closePath();
-        this.bola.key.ctx.fill();
-        this.bola.body.setCircle(this.radio);
-        this.bola.width = 2*this.radio;
-        this.bola.height = 2*this.radio;
-        this.bola.key.update();
-    };
-    player = new Player(game.world.centerX,game.world.centerY,'#ff9999');
+    player = new Player(game.world.randomX,game.world.randomY,'#ff9999');
+    player.id = clientIndex;
     socket.emit('player',player.bola.x,player.bola.y,player.radio);
+    socket.on('players', function (list_players) {
+        console.log('creando players');
+        for(var j=0; j<list_players.length; j++) {
+            if (j != player.id) {
+                var enemie = new Player(list_players[j].position.x, list_players[j].position.y, '000000');
+                var players = enemies.create(list_players[j].position.x, list_players[j].position.y, enemie.bmpPlayer);
+                players.body.setCircle(list_players[j].radio);
+            }
+        }
+    });
     cursors = game.input.keyboard.createCursorKeys();
 
     //  Notice that the sprite doesn't have any momentum at all,
@@ -102,20 +115,21 @@ function create() {
     //  The smaller the value, the smooth the camera (and the longer it takes to catch up)
     game.camera.follow(player.bola, Phaser.Camera.FOLLOW_LOCKON, 0.1, 0.1);
     game.world.bringToTop(food);
-
+    enemies = game.add.group();
+    enemies.enableBody=true;
+    enemies.physicsBodyType = Phaser.Physics.ARCADE;
 }
 
 function update() {
     if(game.time.now - actionTime > 1000) { //Check if position has changed every 1 second
         if (player.oldPosition.x != player.bola.x || player.oldPosition.y != player.bola.y) {
             console.log('position changed');
-            //socket.emit('position',{x:player.bola.x, y:player.bola.y, radio:player.radio});
+            //socket.emit('position',{x:player.bola.x, y:player.bola.y, radio:player.radio, id:player.id});
             actionTime = game.time.now;
             player.oldPosition.x = player.bola.x;
             player.oldPosition.y = player.bola.y;
         }
     }
-
 
     if(score > 100){
         game.state.add('level2', level2);
@@ -129,13 +143,21 @@ function update() {
     //player.body.setZeroVelocity();
     game.physics.arcade.overlap(player.bola, food, eatFood, null, this);
     socket.on('new_food', function(new_food,old_x,old_y){
-        console.log("New_food");
         food.forEach(function(particle){
             if(particle.x == old_x && particle.y == old_y){
                 particle.x = new_food.x;
                 particle.y = new_food.y;
             }
         });
+    });
+
+    socket.on('new_player', function (enemy) {
+        console.log('creando players');
+        if (enemy.socketId != player.id) {
+            var enemie = new Player(enemy.position.x, enemy.position.y, '000000');
+            var players = enemies.create(enemy.position.x, enemy.position.y, enemie.bmpPlayer);
+            players.body.setCircle(enemy.radio);
+        }
     });
 
     player.setVelocityX(0);

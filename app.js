@@ -6,6 +6,7 @@ var io = require('socket.io')(http);
 function Player(){
     this.position={x:0 ,y:0};
     this.radio=20;
+    this.id=0;
 }
 function getRandomArbitrary(min, max) {
     return Math.random() * (max - min) + min;
@@ -40,17 +41,20 @@ io.on('connection', function(socket){
     console.log('a user connected');
     var i = socketIds.push(socket.id)-1;
     players.push(new Player()); //falta arreglar si un client es desconecta i un altre es conecta no faci push
+    players[i].id = i;
     console.log('user index: ' + i);
     socket.emit('index',{clientIndex: i});
     socket.emit('initFood', listFood);
-    //socket.emit('players', players);
     socket.on('player', function (x,y,radio) {
         var i = findIndex(socket.id);
         players[i].position.x=x;
         players[i].position.y=y;
         players[i].radio=radio;
         console.log('x: '+ players[i].position.x + ' y: '+ players[i].position.y);
+        socket.broadcast.emit('new_player', players[i]);
+        socket.emit('players', players);
     });
+    //socket.emit('players', players);
     socket.on('update_food', function(x,y){
         for (var i=0; i<listFood.length; i++){
             if (listFood[i].x == x && listFood[i].y == y){
