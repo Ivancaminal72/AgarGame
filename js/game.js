@@ -10,6 +10,7 @@ var listFood =[];
 var bmpFood;
 var score = 0;
 var enemies;
+var list_enemies = [];
 //Player
 function Player(start_x, start_y, color) {
     this.radio = playerStartRadius;
@@ -152,12 +153,9 @@ function update() {
     });
 
     socket.on('new_player', function (enemy) {
-        console.log('creando players');
-        if (enemy.socketId != player.id) {
-            var enemie = new Player(enemy.position.x, enemy.position.y, '000000');
-            var players = enemies.create(enemy.position.x, enemy.position.y, enemie.bmpPlayer);
-            players.body.setCircle(enemy.radio);
-        }
+        var enemie = new Player(enemy.position.x, enemy.position.y, '000000');
+        var players = enemies.create(enemy.position.x, enemy.position.y, enemie.bmpPlayer);
+        players.body.setCircle(enemy.radio);
     });
 
     player.setVelocityX(0);
