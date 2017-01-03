@@ -104,7 +104,7 @@ function create() {
         console.log('creando players');
         for(var j=0; j<list_players.length; j++) {
             if (j != player.id) {
-                var enemie = new Player(list_players[j].position.x, list_players[j].position.y, list_players[j].radio, '000000');
+                var enemie = new Player(list_players[j].position.x, list_players[j].position.y, list_players[j].radio, '#'+Math.floor(Math.random()*16777215).toString(16));
                 var players = enemies.create(list_players[j].position.x, list_players[j].position.y, enemie.bmpPlayer);
                 players.body.setCircle(list_players[j].radio);
                 enemie.bola.kill();
@@ -130,7 +130,7 @@ function create() {
     });
 
     socket.on('new_player', function (enemy) {
-        var enemie = new Player(enemy.position.x, enemy.position.y, enemy.radio, '000000');
+        var enemie = new Player(enemy.position.x, enemy.position.y, enemy.radio, '#'+Math.floor(Math.random()*16777215).toString(16));
         var players = enemies.create(enemy.position.x, enemy.position.y, enemie.bmpPlayer);
         players.body.setCircle(enemy.radio);
         enemie.bola.kill();
