@@ -54,15 +54,23 @@ io.on('connection', function(socket){
         socket.broadcast.emit('new_player', players[i]);
         socket.emit('players', players);
     });
+
     //socket.emit('players', players);
-    socket.on('update_food', function(x,y){
+    socket.on('update_food', function(x,y,player_id){
         for (var i=0; i<listFood.length; i++){
             if (listFood[i].x == x && listFood[i].y == y){
                 listFood[i].x = getRandomArbitrary(0,1600);
                 listFood[i].y = getRandomArbitrary(0,1200);
+                players[player_id].radio += 1;
             }
             socket.broadcast.emit('new_food', listFood[i],x,y);
+            socket.broadcast.emit('update_size', players[player_id].position.x,players[player_id].position.y, players[player_id].radio);
         }
+    });
+    socket.on('new_position',function(new_x,new_y,id){
+        socket.broadcast.emit('update_position', new_x,new_y,players[id].position.x,players[id].position.y);
+        players[id].position.x = new_x;
+        players[id].position.y = new_y;
     });
     socket.on('disconnect', function(){
         console.log('user disconnected');

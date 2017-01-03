@@ -10,10 +10,9 @@ var listFood =[];
 var bmpFood;
 var score = 0;
 var enemies;
-var list_enemies = [];
 //Player
-function Player(start_x, start_y, color) {
-    this.radio = playerStartRadius;
+function Player(start_x, start_y, radio, color) {
+    this.radio = radio;
     this.color = color;
     this.oldPosition = {x:start_x, y:start_y};
     this.bmpPlayer = game.add.bitmapData(2*this.radio,2*this.radio);
@@ -24,7 +23,7 @@ function Player(start_x, start_y, color) {
     this.bmpPlayer.ctx.fill();
     this.bola = game.add.sprite(start_x, start_y, this.bmpPlayer);
     game.physics.arcade.enable(this.bola);
-    this.bola.body.setCircle(playerStartRadius);
+    this.bola.body.setCircle(radio);
     this.bola.body.collideWorldBounds = true;
     this.id = 0;
 }
@@ -94,17 +93,21 @@ function create() {
      };
      var barrera = new Barrera(80/2,60/2);
      barrera.barrera;*/
+    enemies = game.add.group();
+    enemies.enableBody=true;
+    enemies.physicsBodyType = Phaser.Physics.ARCADE;
 
-    player = new Player(game.world.randomX,game.world.randomY,'#ff9999');
+    player = new Player(game.world.randomX,game.world.randomY,playerStartRadius,'#ff9999');
     player.id = clientIndex;
     socket.emit('player',player.bola.x,player.bola.y,player.radio);
     socket.on('players', function (list_players) {
         console.log('creando players');
         for(var j=0; j<list_players.length; j++) {
             if (j != player.id) {
-                var enemie = new Player(list_players[j].position.x, list_players[j].position.y, '000000');
+                var enemie = new Player(list_players[j].position.x, list_players[j].position.y, list_players[j].radio, '000000');
                 var players = enemies.create(list_players[j].position.x, list_players[j].position.y, enemie.bmpPlayer);
                 players.body.setCircle(list_players[j].radio);
+                enemie.bola.kill();
             }
         }
     });
@@ -116,19 +119,51 @@ function create() {
     //  The smaller the value, the smooth the camera (and the longer it takes to catch up)
     game.camera.follow(player.bola, Phaser.Camera.FOLLOW_LOCKON, 0.1, 0.1);
     game.world.bringToTop(food);
-    enemies = game.add.group();
-    enemies.enableBody=true;
-    enemies.physicsBodyType = Phaser.Physics.ARCADE;
+
+    socket.on('new_food', function(new_food,old_x,old_y){
+        food.forEach(function(particle){
+            if(particle.x == old_x && particle.y == old_y){
+                particle.x = new_food.x;
+                particle.y = new_food.y;
+            }
+        });
+    });
+
+    socket.on('new_player', function (enemy) {
+        var enemie = new Player(enemy.position.x, enemy.position.y, enemy.radio, '000000');
+        var players = enemies.create(enemy.position.x, enemy.position.y, enemie.bmpPlayer);
+        players.body.setCircle(enemy.radio);
+        enemie.bola.kill();
+    });
+
+    socket.on('update_position', function(new_x,new_y,old_x,old_y){
+        enemies.forEach(function(enem){
+            if(enem.x == old_x && enem.y == old_y){
+                enem.x = new_x;
+                enem.y = new_y;
+            }
+        });
+    });
+
+    socket.on('update_size', function(pos_x,pos_y,radio){
+        console.log(radio);
+        enemies.forEach(function(enem){
+            if(enem.x == pos_x && enem.y == pos_y){
+                enem.width = radio*2;
+                enem.height = radio*2;
+            }
+        });
+    });
 }
 
 function update() {
     if(game.time.now - actionTime > 1000) { //Check if position has changed every 1 second
         if (player.oldPosition.x != player.bola.x || player.oldPosition.y != player.bola.y) {
             console.log('position changed');
-            //socket.emit('position',{x:player.bola.x, y:player.bola.y, radio:player.radio, id:player.id});
             actionTime = game.time.now;
             player.oldPosition.x = player.bola.x;
             player.oldPosition.y = player.bola.y;
+            socket.emit('new_position', player.bola.x, player.bola.y, player.id);
         }
     }
 
@@ -143,20 +178,6 @@ function update() {
 
     //player.body.setZeroVelocity();
     game.physics.arcade.overlap(player.bola, food, eatFood, null, this);
-    socket.on('new_food', function(new_food,old_x,old_y){
-        food.forEach(function(particle){
-            if(particle.x == old_x && particle.y == old_y){
-                particle.x = new_food.x;
-                particle.y = new_food.y;
-            }
-        });
-    });
-
-    socket.on('new_player', function (enemy) {
-        var enemie = new Player(enemy.position.x, enemy.position.y, '000000');
-        var players = enemies.create(enemy.position.x, enemy.position.y, enemie.bmpPlayer);
-        players.body.setCircle(enemy.radio);
-    });
 
     player.setVelocityX(0);
     player.setVelocityY(0);
@@ -185,13 +206,14 @@ function render() {
     }
 
 }
+
 var radio = playerStartRadius;
 function eatFood (oldplayer, deadparticle) {
 
     // Removes the particle
     deadparticle.kill();
 
-    socket.emit('update_food', deadparticle.x, deadparticle.y);
+    socket.emit('update_food', deadparticle.x, deadparticle.y, player.id);
 
     radio+=1;
     console.log("NewScale: " + radio);
