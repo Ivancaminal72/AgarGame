@@ -78,7 +78,7 @@ var level2 = {
     update: function() {
 
         //player.body.setZeroVelocity();
-        game.physics.arcade.overlap(player.bola, food, eatFood, null, this);
+        game.physics.arcade.overlap(player.bola, food, overlapFood, null, this);
 
         player.setVelocityX(0);
         player.setVelocityY(0);

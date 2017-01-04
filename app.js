@@ -3,10 +3,10 @@ var app = express();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 
-function Player(){
+function Player(socketId){
+    this.socketId=socketId;
     this.position={x:0 ,y:0};
-    this.radio=20;
-    this.id=0;
+    this.radius=0;
 }
 function getRandomArbitrary(min, max) {
     return Math.random() * (max - min) + min;
@@ -21,12 +21,20 @@ var players=[];
 
 var socketIds = [];
 
-function findIndex(socketId){
-    for(var n=0; n<socketIds.length; n++){
-        if(socketId==socketIds[n]){
+function findPlayerIndex(socketId){
+    for(var n=0; n<players.length; n++){
+        if(socketId==players[n].socketId){
             return n;
         }
     }
+}
+function searchEmptyPosition() {
+    for(var n=0; n<players.length; n++){
+        if(players[n].socketId==null){
+            return n;
+        }
+    }
+    return -1;
 }
 
 //Our js files
@@ -39,38 +47,49 @@ app.get('/', function(req, res){
 
 io.on('connection', function(socket){
     console.log('a user connected');
-    var i = socketIds.push(socket.id)-1;
-    players.push(new Player()); //falta arreglar si un client es desconecta i un altre es conecta no faci push
-    players[i].id = i;
-    console.log('user index: ' + i);
-    socket.emit('index',{clientIndex: i});
+    var emptyPosition = searchEmptyPosition(); //Search if an empty position is available in de players list
+    if(emptyPosition == -1){players.push(new Player(socket.id));}
+    else{players[emptyPosition].socketId = socket.id}
     socket.emit('initFood', listFood);
-    socket.on('player', function (x,y,radio) {
-        var i = findIndex(socket.id);
-        players[i].position.x=x;
-        players[i].position.y=y;
-        players[i].radio=radio;
-        console.log('x: '+ players[i].position.x + ' y: '+ players[i].position.y);
-        socket.broadcast.emit('new_player', players[i]);
-        socket.emit('players', players);
+    socket.emit('initPlayers', players);
+    socket.on('new_player', function (x,y,radius) {
+        console.log('new player');
+        var playerIndex = findPlayerIndex(socket.id);
+        console.log('index: '+playerIndex);
+        players[playerIndex].position.x=x;
+        players[playerIndex].position.y=y;
+        players[playerIndex].radius=radius;
+        console.log('x: '+ players[playerIndex].position.x + ' y: '+ players[playerIndex].position.y);
+        console.log('radius: '+players[playerIndex].radius);
+
+        socket.emit('index', playerIndex);
+        socket.broadcast.emit('new_enemy', playerIndex, players[playerIndex]);
+
     });
 
-    socket.on('overlap_food', function(player_id, indexFood, x, y){
-        if(listFood[indexFood].x == x && listFood[indexFood].y == y){ //Correct overlap
-            listFood[indexFood].x = getRandomArbitrary(0,1600);
-            listFood[indexFood].y = getRandomArbitrary(0,1200);
-            players[player_id].ratio += 1;
-            io.emit('update_particle', indexFood, listFood[indexFood]);
-            socket.broadcast.emit('update_size', players[player_id].position.x,players[player_id].position.y, players[player_id].radio);
+    socket.on('overlap_food', function(playerIndex, foodIndex, x, y){
+        console.log('overlap_food');
+        if(listFood[foodIndex].x == x && listFood[foodIndex].y == y){ //Correct overlap
+            listFood[foodIndex].x = getRandomArbitrary(0,1600);
+            listFood[foodIndex].y = getRandomArbitrary(0,1200);
+            console.log('player index: '+playerIndex);
+            console.log('player radius: '+players[playerIndex].radius);
+            players[playerIndex].radius += 1;
+            io.emit('update_particle', foodIndex, listFood[foodIndex]);
+            io.emit('update_player_size', playerIndex, players[playerIndex].radius);
         }
     });
-    socket.on('new_position',function(new_x,new_y,id){
-        socket.broadcast.emit('update_position', new_x,new_y,players[id].position.x,players[id].position.y);
-        players[id].position.x = new_x;
-        players[id].position.y = new_y;
+    socket.on('new_position',function(new_x,new_y,playerIndex){
+        socket.broadcast.emit('update_position', playerIndex, new_x, new_y);
+        players[playerIndex].position.x = new_x;
+        players[playerIndex].position.y = new_y;
     });
     socket.on('disconnect', function(){
         console.log('user disconnected');
+        var playerIndex = findPlayerIndex(socket.id);
+        players[playerIndex].radius = 10; //Radius not possible (wont be displayed as enemy on the client side)
+        players[playerIndex].socketId=null;
+        socket.broadcast.emit('delete_enemy', playerIndex);
     });
 });
 

@@ -8,6 +8,7 @@ var cursors;
 var food;
 var score = 0;
 var enemies;
+var oldOverlaps = {food:{x:-1, y:-1}, enemies:{x:-1, y:-1}};
 //Player
 function Player(start_x, start_y, radio, color) {
     this.radio = radio;
@@ -23,7 +24,7 @@ function Player(start_x, start_y, radio, color) {
     game.physics.arcade.enable(this.bola);
     this.bola.body.setCircle(radio);
     this.bola.body.collideWorldBounds = true;
-    this.id = 0;
+    this.index = -1;
 }
 
 Player.prototype.setVelocityX =  function(x){
@@ -52,14 +53,13 @@ Player.prototype.setRadius = function(radius){
 //Communication socket io
 var socket = io();
 var actionTime = 0;
-var clientIndex;
-socket.on('index', function (id) {
-    console.log("socket new index: " + id.clientIndex);
-    clientIndex=id.clientIndex;
-});
 socket.on('initFood', function (initFood) {
     game.state.pause();
     createFood(initFood); //Create the actual food that arrives from the server
+});
+socket.on('initPlayers', function (initPlayers){
+    game.state.pause();
+    createEnemies(initPlayers);
 });
 
 function preload() {
@@ -89,24 +89,13 @@ function create() {
      };
      var barrera = new Barrera(80/2,60/2);
      barrera.barrera;*/
-    enemies = game.add.group();
-    enemies.enableBody=true;
-    enemies.physicsBodyType = Phaser.Physics.ARCADE;
 
     player = new Player(game.world.randomX,game.world.randomY,playerStartRadius,'#ff9999');
-    player.id = clientIndex;
-    socket.emit('player',player.bola.x,player.bola.y,player.radio);
-    socket.on('players', function (list_players) {
-        console.log('creando players');
-        for(var j=0; j<list_players.length; j++) {
-            if (j != player.id) {
-                var enemie = new Player(list_players[j].position.x, list_players[j].position.y, list_players[j].radio, '#'+Math.floor(Math.random()*16777215).toString(16));
-                var players = enemies.create(list_players[j].position.x, list_players[j].position.y, enemie.bmpPlayer);
-                players.body.setCircle(list_players[j].radio);
-                enemie.bola.kill();
-            }
-        }
+    socket.on('index', function (index) {
+        console.log("new player index: " + index);
+        player.index=index;
     });
+    socket.emit('new_player',player.bola.x,player.bola.y,player.radio);
     cursors = game.input.keyboard.createCursorKeys();
 
     //  Notice that the sprite doesn't have any momentum at all,
@@ -115,49 +104,84 @@ function create() {
     //  The smaller the value, the smooth the camera (and the longer it takes to catch up)
     game.camera.follow(player.bola, Phaser.Camera.FOLLOW_LOCKON, 0.1, 0.1);
     game.world.bringToTop(food);
+    game.world.bringToTop(enemies);
 
-    socket.on('update_particle', function(indexFood, new_food){
-        var particle = getChildAt(indexFood);
+    socket.on('update_particle', function(foodIndex, new_food){
+        console.log('particle killed');
+        var particle = food.getChildAt(foodIndex);
         particle.x = new_food.x;
         particle.y = new_food.y;
     });
+    socket.on('update_player_size', function(playerIndex, radio){
+        if(playerIndex == player.index){
+            console.log("Update Player size: " + radio);
+            player.setRadius(radio);
 
-    socket.on('new_player', function (enemy) {
-        var enemie = new Player(enemy.position.x, enemy.position.y, enemy.radio, '#'+Math.floor(Math.random()*16777215).toString(16));
-        var players = enemies.create(enemy.position.x, enemy.position.y, enemie.bmpPlayer);
-        players.body.setCircle(enemy.radio);
-        enemie.bola.kill();
+            //Update player score
+            score = (radio-20) * 10;
+
+        }
+        else{
+            var enemyIndex;
+            if(playerIndex > player.index){enemyIndex=playerIndex-1;}
+            else{enemyIndex=playerIndex;}
+            console.log("Update Enemie " + enemyIndex + " radio");
+            var enemy = enemies.getChildAt(enemyIndex);
+            if(!enemy.exists){enemy.revive()}
+            var color = enemy.key.ctx.fillStyle;
+            enemy.key.clear();
+            enemy.key.resize(2*radio,2*radio);
+            enemy.key.ctx.fillStyle = color;
+            enemy.key.ctx.beginPath();
+            enemy.key.ctx.arc(radio,radio,radio,0,2*Math.PI);
+            enemy.key.ctx.closePath();
+            enemy.key.ctx.fill();
+            enemy.body.setCircle(radio);
+            enemy.width = 2*radio;
+            enemy.height = 2*radio;
+            enemy.key.update();
+        }
+    });
+    socket.on('delete_enemy', function(playerIndex){
+        var enemyIndex;
+        if(playerIndex > player.index){enemyIndex=playerIndex-1;}
+        else{enemyIndex=playerIndex;}
+        var enemy = enemies.getChildAt(enemyIndex);
+        enemy.kill();
     });
 
-    socket.on('update_position', function(new_x,new_y,old_x,old_y){
-        enemies.forEach(function(enem){
-            if(enem.x == old_x && enem.y == old_y){
-                enem.x = new_x;
-                enem.y = new_y;
-            }
-        });
+    socket.on('new_enemy', function (playerIndex, new_enemy) {
+        console.log('new_enemy');
+        var enemyIndex;
+        if(playerIndex > player.index){enemyIndex=playerIndex-1;}
+        else{enemyIndex=playerIndex;}
+        console.log('enemy index: '+enemyIndex);
+        console.log('enemy x: '+ new_enemy.position.x +' y: '+ new_enemy.position.y+ ' radio: '+new_enemy.radio);
+        var bmpEnemy = createBitmap(new_enemy.radio, '#' + Math.floor(Math.random() * 16777215).toString(16));
+        var enemy = enemies.create(new_enemy.position.x, new_enemy.position.y, bmpEnemy, null, true, enemyIndex);
+        enemy.body.setCircle(new_enemy.radio);
     });
 
-    socket.on('update_size', function(pos_x,pos_y,radio){
-        console.log(radio);
-        enemies.forEach(function(enem){
-            if(enem.x == pos_x && enem.y == pos_y){
-                enem.width = radio*2;
-                enem.height = radio*2;
-            }
-        });
+    socket.on('update_player_position', function(playerIndex, new_x, new_y){
+        console.log('position changed');
+        var enemyIndex;
+        if(playerIndex > player.index){enemyIndex=playerIndex-1;}
+        else{enemyIndex=playerIndex;}
+        var enemy = enemies.getChildAt(enemyIndex);
+        enemy.x = new_x;
+        enemy.y = new_y;
     });
 }
 
 function update() {
-    if(game.time.now - actionTime > 1000) { //Check if position has changed every 1 second
+    if(game.time.now - actionTime > 1000) { //Check this code every 1 second
         if (player.oldPosition.x != player.bola.x || player.oldPosition.y != player.bola.y) {
-            console.log('position changed');
             actionTime = game.time.now;
             player.oldPosition.x = player.bola.x;
             player.oldPosition.y = player.bola.y;
-            socket.emit('new_position', player.bola.x, player.bola.y, player.id);
+            socket.emit('new_position', player.bola.x, player.bola.y, player.index);
         }
+        game.physics.arcade.overlap(player.bola, food, overlapFood, null, this);
     }
 
     if(score > 100){
@@ -170,7 +194,6 @@ function update() {
     }
 
     //player.body.setZeroVelocity();
-    game.physics.arcade.overlap(player.bola, food, eatFood, null, this);
 
     player.setVelocityX(0);
     player.setVelocityY(0);
@@ -193,42 +216,59 @@ function update() {
 function render() {
 
     // Score
-    game.debug.text("Score: "+score.toString() , 32, 32, 'black');
+    game.debug.text("Score: "+ score.toString() , 32, 32, 'black');
     if(score > 100){
         game.debug.text("Loading Level 2" , 400, 300, 'black');
     }
 
 }
 
-var radio = playerStartRadius;
-function eatFood (oldplayer, deadparticle) {
 
-    socket.emit('overlap_food', player.id, food.getIndex(deadparticle), deadparticle.x, deadparticle.y);
-
-    radio+=1;
-    console.log("NewScale: " + radio);
-    player.setRadius(radio);
-
-    //  Add and update the score
-    score = (radio-20) * 10;
-
+function overlapFood (oldplayer, deadparticle) {
+    if(oldOverlaps.food.x != deadparticle.x || oldOverlaps.food.y != deadparticle.y) { //Check if the message is already sent
+        socket.emit('overlap_food', player.index, food.getIndex(deadparticle), deadparticle.x, deadparticle.y);
+        player.oldPosition.x = deadparticle.x;
+        player.oldPosition.y = deadparticle.y;
+    }
 }
 
 function createFood(initFood) {
     // Food
-    console.log('creando food')
-    var bmpFood = game.add.bitmapData(2*foodRadius,2*foodRadius);
-    bmpFood.ctx.fillStyle = '#fff242';
-    bmpFood.ctx.beginPath();
-    bmpFood.ctx.arc(foodRadius,foodRadius,foodRadius,0,2*Math.PI);
-    bmpFood.ctx.closePath();
-    bmpFood.ctx.fill();
+    console.log('creando food');
+    var bmpParticle = createBitmap(foodRadius, '#fff242');
     food = game.add.group();
     food.enableBody=true;
     food.physicsBodyType = Phaser.Physics.ARCADE;
     for(var i=0; i<initFood.length; i++){
-        var particle = food.create(initFood[i].x, initFood[i].y, bmpFood, null, null, i);
+        var particle = food.create(initFood[i].x, initFood[i].y, bmpParticle, null, true, i);
         particle.body.setCircle(foodRadius);
     }
     game.state.resume();
+}
+
+function createEnemies(initPlayers){
+    // Enemies
+    console.log('creando players');
+    enemies = game.add.group();
+    enemies.enableBody=true;
+    enemies.physicsBodyType = Phaser.Physics.ARCADE;
+    for(var j=0; j<initPlayers.length; j++) {
+        if (initPlayers[j].radio >= 20) {
+            console.log('player x: '+ initPlayers[j].position.x +' y: '+ initPlayers[j].position.y+ ' radio: '+initPlayers[j].radio);
+            var bmpEnemy = createBitmap(initPlayers[j].radio, '#' + Math.floor(Math.random() * 16777215).toString(16));
+            var enemy = enemies.create(initPlayers[j].position.x, initPlayers[j].position.y, bmpEnemy, null, true, j);
+            enemy.body.setCircle(initPlayers[j].radio);
+        }
+    }
+    game.state.resume();
+}
+
+function createBitmap(radio, color) {
+    var bmp = game.add.bitmapData(2 * radio, 2 * radio);
+    bmp.ctx.fillStyle = color;
+    bmp.ctx.beginPath();
+    bmp.ctx.arc(radio, radio, radio, 0, 2 * Math.PI);
+    bmp.ctx.closePath();
+    bmp.ctx.fill();
+    return bmp;
 }
