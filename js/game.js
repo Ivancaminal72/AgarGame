@@ -6,8 +6,6 @@ var velocityPlayer = 200;
 var player;
 var cursors;
 var food;
-var listFood =[];
-var bmpFood;
 var score = 0;
 var enemies;
 //Player
@@ -59,11 +57,9 @@ socket.on('index', function (id) {
     console.log("socket new index: " + id.clientIndex);
     clientIndex=id.clientIndex;
 });
-socket.on('initFood', function (list) {
+socket.on('initFood', function (initFood) {
     game.state.pause();
-    console.log(list[0]);
-    listFood=list;
-    createFood(); //Create the actual food that arrives from the server
+    createFood(initFood); //Create the actual food that arrives from the server
 });
 
 function preload() {
@@ -224,21 +220,20 @@ function eatFood (oldplayer, deadparticle) {
 
 }
 
-function createFood() {
+function createFood(initFood) {
     // Food
     console.log('creando food')
-    bmpFood = game.add.bitmapData(2*foodRadius,2*foodRadius);
+    var bmpFood = game.add.bitmapData(2*foodRadius,2*foodRadius);
     bmpFood.ctx.fillStyle = '#fff242';
     bmpFood.ctx.beginPath();
     bmpFood.ctx.arc(foodRadius,foodRadius,foodRadius,0,2*Math.PI);
     bmpFood.ctx.closePath();
     bmpFood.ctx.fill();
-    //listFood = game.add.group(World,"listFood",false,true,Phaser.Physics.ARCADE);
     food = game.add.group();
     food.enableBody=true;
     food.physicsBodyType = Phaser.Physics.ARCADE;
-    for(var i=0; i<listFood.length; i++){
-        var particle = food.create(listFood[i].x, listFood[i].y, bmpFood);
+    for(var i=0; i<initFood.length; i++){
+        var particle = food.create(initFood[i].x, initFood[i].y, bmpFood);
         particle.body.setCircle(foodRadius);
     }
     game.state.resume();

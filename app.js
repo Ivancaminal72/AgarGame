@@ -55,7 +55,6 @@ io.on('connection', function(socket){
         socket.emit('players', players);
     });
 
-    //socket.emit('players', players);
     socket.on('update_food', function(x,y,player_id){
         for (var i=0; i<listFood.length; i++){
             if (listFood[i].x == x && listFood[i].y == y){
