@@ -55,14 +55,12 @@ io.on('connection', function(socket){
         socket.emit('players', players);
     });
 
-    socket.on('update_food', function(x,y,player_id){
-        for (var i=0; i<listFood.length; i++){
-            if (listFood[i].x == x && listFood[i].y == y){
-                listFood[i].x = getRandomArbitrary(0,1600);
-                listFood[i].y = getRandomArbitrary(0,1200);
-                players[player_id].radio += 1;
-            }
-            socket.broadcast.emit('new_food', listFood[i],x,y);
+    socket.on('overlap_food', function(player_id, indexFood, x, y){
+        if(listFood[indexFood].x == x && listFood[indexFood].y == y){ //Correct overlap
+            listFood[indexFood].x = getRandomArbitrary(0,1600);
+            listFood[indexFood].y = getRandomArbitrary(0,1200);
+            players[player_id].ratio += 1;
+            io.emit('update_particle', indexFood, listFood[indexFood]);
             socket.broadcast.emit('update_size', players[player_id].position.x,players[player_id].position.y, players[player_id].radio);
         }
     });

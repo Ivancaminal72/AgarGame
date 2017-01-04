@@ -116,13 +116,10 @@ function create() {
     game.camera.follow(player.bola, Phaser.Camera.FOLLOW_LOCKON, 0.1, 0.1);
     game.world.bringToTop(food);
 
-    socket.on('new_food', function(new_food,old_x,old_y){
-        food.forEach(function(particle){
-            if(particle.x == old_x && particle.y == old_y){
-                particle.x = new_food.x;
-                particle.y = new_food.y;
-            }
-        });
+    socket.on('update_particle', function(indexFood, new_food){
+        var particle = getChildAt(indexFood);
+        particle.x = new_food.x;
+        particle.y = new_food.y;
     });
 
     socket.on('new_player', function (enemy) {
@@ -206,10 +203,7 @@ function render() {
 var radio = playerStartRadius;
 function eatFood (oldplayer, deadparticle) {
 
-    // Removes the particle
-    deadparticle.kill();
-
-    socket.emit('update_food', deadparticle.x, deadparticle.y, player.id);
+    socket.emit('overlap_food', player.id, food.getIndex(deadparticle), deadparticle.x, deadparticle.y);
 
     radio+=1;
     console.log("NewScale: " + radio);
@@ -233,9 +227,8 @@ function createFood(initFood) {
     food.enableBody=true;
     food.physicsBodyType = Phaser.Physics.ARCADE;
     for(var i=0; i<initFood.length; i++){
-        var particle = food.create(initFood[i].x, initFood[i].y, bmpFood);
+        var particle = food.create(initFood[i].x, initFood[i].y, bmpFood, null, null, i);
         particle.body.setCircle(foodRadius);
     }
     game.state.resume();
 }
-
