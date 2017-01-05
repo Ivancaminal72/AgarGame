@@ -80,7 +80,7 @@ io.on('connection', function(socket){
         }
     });
     socket.on('new_position',function(new_x,new_y,playerIndex){
-        socket.broadcast.emit('update_position', playerIndex, new_x, new_y);
+        socket.broadcast.emit('update_player_position', playerIndex, new_x, new_y);
         players[playerIndex].position.x = new_x;
         players[playerIndex].position.y = new_y;
     });
