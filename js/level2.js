@@ -6,17 +6,17 @@ var level2 = {
     create: function(){
 
         game.add.tileSprite(0, 0, 1600, 1200, 'background_black');
-        radio = 20;
+        radius = 20;
         score = 0;
         //Player
         function Player(start_x, start_y, color) {
-            this.radio = playerStartRadius;
+            this.radius = playerStartRadius;
             this.position = {x: start_x, y: start_y};
             this.color = color;
-            this.bmpPlayer = game.add.bitmapData(2*this.radio,2*this.radio);
+            this.bmpPlayer = game.add.bitmapData(2*this.radius,2*this.radius);
             this.bmpPlayer.ctx.fillStyle = this.color;
             this.bmpPlayer.ctx.beginPath();
-            this.bmpPlayer.ctx.arc(this.radio,this.radio,this.radio,0,2*Math.PI);
+            this.bmpPlayer.ctx.arc(this.radius,this.radius,this.radius,0,2*Math.PI);
             this.bmpPlayer.ctx.closePath();
             this.bmpPlayer.ctx.fill();
             this.bola = game.add.sprite(this.position.x, this.position.y, this.bmpPlayer);
@@ -34,17 +34,17 @@ var level2 = {
         };
 
         Player.prototype.setRadius = function(radius){
-            this.radio = radius;
+            this.radius = radius;
             this.bola.key.clear();
-            this.bola.key.resize(2*this.radio,2*this.radio);
+            this.bola.key.resize(2*this.radius,2*this.radius);
             this.bola.key.ctx.fillStyle = this.color;
             this.bola.key.ctx.beginPath();
-            this.bola.key.ctx.arc(this.radio,this.radio,this.radio,0,2*Math.PI);
+            this.bola.key.ctx.arc(this.radius,this.radius,this.radius,0,2*Math.PI);
             this.bola.key.ctx.closePath();
             this.bola.key.ctx.fill();
-            this.bola.body.setCircle(this.radio);
-            this.bola.width = 2*this.radio;
-            this.bola.height = 2*this.radio;
+            this.bola.body.setCircle(this.radius);
+            this.bola.width = 2*this.radius;
+            this.bola.height = 2*this.radius;
             this.bola.key.update();
         };
 
@@ -115,9 +115,9 @@ var level2 = {
         // Add random food particle
         var particle = food.create(game.world.randomX, game.world.randomY, bmpFood);
         particle.body.setCircle(foodRadius);
-        radio+=1;
-        console.log("NewScale: " + radio);
-        player.setRadius(radio);
+        radius+=1;
+        console.log("NewScale: " + radius);
+        player.setRadius(radius);
 
         //  Add and update the score
         score += 10;

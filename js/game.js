@@ -10,19 +10,19 @@ var score = 0;
 var enemies;
 var oldOverlaps = {food:{x:-1, y:-1}, enemies:{x:-1, y:-1}};
 //Player
-function Player(start_x, start_y, radio, color) {
-    this.radio = radio;
+function Player(start_x, start_y, radius, color) {
+    this.radius = radius;
     this.color = color;
     this.oldPosition = {x:start_x, y:start_y};
-    this.bmpPlayer = game.add.bitmapData(2*this.radio,2*this.radio);
+    this.bmpPlayer = game.add.bitmapData(2*this.radius,2*this.radius);
     this.bmpPlayer.ctx.fillStyle = this.color;
     this.bmpPlayer.ctx.beginPath();
-    this.bmpPlayer.ctx.arc(this.radio,this.radio,this.radio,0,2*Math.PI);
+    this.bmpPlayer.ctx.arc(this.radius,this.radius,this.radius,0,2*Math.PI);
     this.bmpPlayer.ctx.closePath();
     this.bmpPlayer.ctx.fill();
     this.bola = game.add.sprite(start_x, start_y, this.bmpPlayer);
     game.physics.arcade.enable(this.bola);
-    this.bola.body.setCircle(radio);
+    this.bola.body.setCircle(radius);
     this.bola.body.collideWorldBounds = true;
     this.index = -1;
 }
@@ -36,17 +36,17 @@ Player.prototype.setVelocityY =  function(y){
 };
 
 Player.prototype.setRadius = function(radius){
-    this.radio = radius;
+    this.radius = radius;
     this.bola.key.clear();
-    this.bola.key.resize(2*this.radio,2*this.radio);
+    this.bola.key.resize(2*this.radius,2*this.radius);
     this.bola.key.ctx.fillStyle = this.color;
     this.bola.key.ctx.beginPath();
-    this.bola.key.ctx.arc(this.radio,this.radio,this.radio,0,2*Math.PI);
+    this.bola.key.ctx.arc(this.radius,this.radius,this.radius,0,2*Math.PI);
     this.bola.key.ctx.closePath();
     this.bola.key.ctx.fill();
-    this.bola.body.setCircle(this.radio);
-    this.bola.width = 2*this.radio;
-    this.bola.height = 2*this.radio;
+    this.bola.body.setCircle(this.radius);
+    this.bola.width = 2*this.radius;
+    this.bola.height = 2*this.radius;
     this.bola.key.update();
 };
 
@@ -95,7 +95,7 @@ function create() {
         console.log("new player index: " + index);
         player.index=index;
     });
-    socket.emit('new_player',player.bola.x,player.bola.y,player.radio);
+    socket.emit('new_player',player.bola.x,player.bola.y,player.radius);
     cursors = game.input.keyboard.createCursorKeys();
 
     //  Notice that the sprite doesn't have any momentum at all,
@@ -112,33 +112,33 @@ function create() {
         particle.x = new_food.x;
         particle.y = new_food.y;
     });
-    socket.on('update_player_size', function(playerIndex, radio){
+    socket.on('update_player_size', function(playerIndex, radius){
         if(playerIndex == player.index){
-            console.log("Update Player size: " + radio);
-            player.setRadius(radio);
+            console.log("Update Player size: " + radius);
+            player.setRadius(radius);
 
             //Update player score
-            score = (radio-20) * 10;
+            score = (radius-20) * 10;
 
         }
         else{
             var enemyIndex;
             if(playerIndex > player.index){enemyIndex=playerIndex-1;}
             else{enemyIndex=playerIndex;}
-            console.log("Update Enemie " + enemyIndex + " radio");
+            console.log("Update Enemie " + enemyIndex + " radius");
             var enemy = enemies.getChildAt(enemyIndex);
             if(!enemy.exists){enemy.revive()}
             var color = enemy.key.ctx.fillStyle;
             enemy.key.clear();
-            enemy.key.resize(2*radio,2*radio);
+            enemy.key.resize(2*radius,2*radius);
             enemy.key.ctx.fillStyle = color;
             enemy.key.ctx.beginPath();
-            enemy.key.ctx.arc(radio,radio,radio,0,2*Math.PI);
+            enemy.key.ctx.arc(radius,radius,radius,0,2*Math.PI);
             enemy.key.ctx.closePath();
             enemy.key.ctx.fill();
-            enemy.body.setCircle(radio);
-            enemy.width = 2*radio;
-            enemy.height = 2*radio;
+            enemy.body.setCircle(radius);
+            enemy.width = 2*radius;
+            enemy.height = 2*radius;
             enemy.key.update();
         }
     });
@@ -156,7 +156,7 @@ function create() {
         if(playerIndex > player.index){enemyIndex=playerIndex-1;}
         else{enemyIndex=playerIndex;}
         console.log('enemy index: '+enemyIndex);
-        console.log('enemy x: '+ new_enemy.position.x +' y: '+ new_enemy.position.y+ ' radio: '+new_enemy.radius);
+        console.log('enemy x: '+ new_enemy.position.x +' y: '+ new_enemy.position.y+ ' radius: '+new_enemy.radius);
         var bmpEnemy = createBitmap(new_enemy.radius, '#' + Math.floor(Math.random() * 16777215).toString(16));
         var enemy = enemies.create(new_enemy.position.x, new_enemy.position.y, bmpEnemy, null, true, enemyIndex);
         enemy.body.setCircle(new_enemy.radius);
@@ -171,6 +171,17 @@ function create() {
         enemy.x = new_x;
         enemy.y = new_y;
     });
+
+    socket.on('player_killed', function () {
+        console.log('player_killed');
+        player.bola.x=game.world.randomX;
+        player.bola.y=game.world.randomY;
+        player.setRadius(playerStartRadius);
+        //Update player score
+        score = (radius-20) * 10;
+        socket.emit('overlap_enemies', player.index, player.radius);
+
+    });
 }
 
 function update() {
@@ -182,9 +193,10 @@ function update() {
             socket.emit('new_position', player.bola.x, player.bola.y, player.index);
         }
         game.physics.arcade.overlap(player.bola, food, overlapFood, null, this);
+        game.physics.arcade.overlap(player.bola, enemies, overlapEnemies, null, this);
     }
 
-    if(score > 100){
+    if(score > 1000){
         game.state.add('level2', level2);
         game.paused = true;
         setTimeout(function() {
@@ -217,18 +229,30 @@ function render() {
 
     // Score
     game.debug.text("Score: "+ score.toString() , 32, 32, 'black');
-    if(score > 100){
+    if(score > 1000){
         game.debug.text("Loading Level 2" , 400, 300, 'black');
     }
 
 }
 
 
-function overlapFood (oldplayer, deadparticle) {
-    if(oldOverlaps.food.x != deadparticle.x && oldOverlaps.food.y != deadparticle.y) { //Check if the message is already sent
+function overlapFood (oldplayer, deadparticle){
+    if(oldOverlaps.food.x != deadparticle.x || oldOverlaps.food.y != deadparticle.y) { //Check if the message is already sent
         socket.emit('overlap_food', player.index, food.getIndex(deadparticle), deadparticle.x, deadparticle.y);
-        player.oldPosition.x = deadparticle.x;
-        player.oldPosition.y = deadparticle.y;
+        oldOverlaps.food.x = deadparticle.x;
+        oldOverlaps.food.y = deadparticle.y;
+    }
+}
+
+function overlapEnemies(oldplayer, oldenemy){
+    if(oldOverlaps.enemies.x != oldenemy.x || oldOverlaps.enemies.y != oldenemy.y) { //Check if the message is already sent
+        var enemyIndex=enemies.getIndex(oldenemy);
+        var playerIndex;
+        if(enemyIndex >= player.index){playerIndex = enemyIndex+1;}
+        else{playerIndex = enemyIndex;}
+        socket.emit('overlap_enemies', player.index, playerIndex);
+        oldOverlaps.enemies.x = oldenemy.x;
+        oldOverlaps.enemies.y = oldenemy.y;
     }
 }
 
@@ -254,7 +278,7 @@ function createEnemies(initPlayers){
     enemies.physicsBodyType = Phaser.Physics.ARCADE;
     for(var j=0; j<initPlayers.length; j++) {
         if (initPlayers[j].radius >= 20) {
-            console.log('player x: '+ initPlayers[j].position.x +' y: '+ initPlayers[j].position.y+ ' radio: '+initPlayers[j].radius);
+            console.log('player x: '+ initPlayers[j].position.x +' y: '+ initPlayers[j].position.y+ ' radius: '+initPlayers[j].radius);
             var bmpEnemy = createBitmap(initPlayers[j].radius, '#' + Math.floor(Math.random() * 16777215).toString(16));
             var enemy = enemies.create(initPlayers[j].position.x, initPlayers[j].position.y, bmpEnemy, null, true, j);
             enemy.body.setCircle(initPlayers[j].radius);
@@ -263,11 +287,11 @@ function createEnemies(initPlayers){
     game.state.resume();
 }
 
-function createBitmap(radio, color) {
-    var bmp = game.add.bitmapData(2*radio,2*radio);
+function createBitmap(radius, color) {
+    var bmp = game.add.bitmapData(2*radius,2*radius);
     bmp.ctx.fillStyle = color;
     bmp.ctx.beginPath();
-    bmp.ctx.arc(radio,radio,radio,0,2*Math.PI);
+    bmp.ctx.arc(radius,radius,radius,0,2*Math.PI);
     bmp.ctx.closePath();
     bmp.ctx.fill();
     return bmp;

@@ -79,11 +79,42 @@ io.on('connection', function(socket){
             io.emit('update_player_size', playerIndex, players[playerIndex].radius);
         }
     });
+
+    socket.on('overlap_enemies', function (playerIndex, player2Index) {
+        console.log('overlap_enemies');
+        var minimumDistance = players[playerIndex].radius + players[player2Index].radius;
+        var x1=players[playerIndex].position.x;
+        var x2=players[player2Index].position.x;
+        var y1=players[playerIndex].position.y;
+        var y2=players[player2Index].position.y;
+        var distance = Math.sqrt( (x1-x2)*(x1-x2) + (y1-y2)*(y1-y2) );
+        if(distance <= minimumDistance){ //Correct overlap
+            if(players[playerIndex].radius > players[player2Index].radius){
+                console.log('dead player index: '+player2Index);
+                players[playerIndex].radius += players[player2Index].radius;
+                io.to(players[player2Index].socketId).emit('player_killed');
+                io.emit('update_player_size', playerIndex, players[playerIndex].radius);
+            }
+            else if(players[playerIndex].radius < players[player2Index].radius){
+                console.log('dead player index: '+playerIndex);
+                players[player2Index].radius += players[playerIndex].radius;
+                socket.emit('player_killed');
+                io.emit('update_player_size', player2Index, players[player2Index].radius);
+            }
+        }
+    });
+
     socket.on('new_position',function(new_x,new_y,playerIndex){
         socket.broadcast.emit('update_player_position', playerIndex, new_x, new_y);
         players[playerIndex].position.x = new_x;
         players[playerIndex].position.y = new_y;
     });
+
+    socket.on('new_radius',function(playerIndex, radius){
+        players[playerIndex].radius = radius;
+        io.emit('update_player_size', playerIndex, players[playerIndex].radius);
+    });
+
     socket.on('disconnect', function(){
         console.log('user disconnected');
         var playerIndex = findPlayerIndex(socket.id);
