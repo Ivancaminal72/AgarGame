@@ -156,10 +156,10 @@ function create() {
         if(playerIndex > player.index){enemyIndex=playerIndex-1;}
         else{enemyIndex=playerIndex;}
         console.log('enemy index: '+enemyIndex);
-        console.log('enemy x: '+ new_enemy.position.x +' y: '+ new_enemy.position.y+ ' radio: '+new_enemy.radio);
-        var bmpEnemy = createBitmap(new_enemy.radio, '#' + Math.floor(Math.random() * 16777215).toString(16));
+        console.log('enemy x: '+ new_enemy.position.x +' y: '+ new_enemy.position.y+ ' radio: '+new_enemy.radius);
+        var bmpEnemy = createBitmap(new_enemy.radius, '#' + Math.floor(Math.random() * 16777215).toString(16));
         var enemy = enemies.create(new_enemy.position.x, new_enemy.position.y, bmpEnemy, null, true, enemyIndex);
-        enemy.body.setCircle(new_enemy.radio);
+        enemy.body.setCircle(new_enemy.radius);
     });
 
     socket.on('update_player_position', function(playerIndex, new_x, new_y){
@@ -225,7 +225,7 @@ function render() {
 
 
 function overlapFood (oldplayer, deadparticle) {
-    if(oldOverlaps.food.x != deadparticle.x || oldOverlaps.food.y != deadparticle.y) { //Check if the message is already sent
+    if(oldOverlaps.food.x != deadparticle.x && oldOverlaps.food.y != deadparticle.y) { //Check if the message is already sent
         socket.emit('overlap_food', player.index, food.getIndex(deadparticle), deadparticle.x, deadparticle.y);
         player.oldPosition.x = deadparticle.x;
         player.oldPosition.y = deadparticle.y;
@@ -253,21 +253,21 @@ function createEnemies(initPlayers){
     enemies.enableBody=true;
     enemies.physicsBodyType = Phaser.Physics.ARCADE;
     for(var j=0; j<initPlayers.length; j++) {
-        if (initPlayers[j].radio >= 20) {
-            console.log('player x: '+ initPlayers[j].position.x +' y: '+ initPlayers[j].position.y+ ' radio: '+initPlayers[j].radio);
-            var bmpEnemy = createBitmap(initPlayers[j].radio, '#' + Math.floor(Math.random() * 16777215).toString(16));
+        if (initPlayers[j].radius >= 20) {
+            console.log('player x: '+ initPlayers[j].position.x +' y: '+ initPlayers[j].position.y+ ' radio: '+initPlayers[j].radius);
+            var bmpEnemy = createBitmap(initPlayers[j].radius, '#' + Math.floor(Math.random() * 16777215).toString(16));
             var enemy = enemies.create(initPlayers[j].position.x, initPlayers[j].position.y, bmpEnemy, null, true, j);
-            enemy.body.setCircle(initPlayers[j].radio);
+            enemy.body.setCircle(initPlayers[j].radius);
         }
     }
     game.state.resume();
 }
 
 function createBitmap(radio, color) {
-    var bmp = game.add.bitmapData(2 * radio, 2 * radio);
+    var bmp = game.add.bitmapData(2*radio,2*radio);
     bmp.ctx.fillStyle = color;
     bmp.ctx.beginPath();
-    bmp.ctx.arc(radio, radio, radio, 0, 2 * Math.PI);
+    bmp.ctx.arc(radio,radio,radio,0,2*Math.PI);
     bmp.ctx.closePath();
     bmp.ctx.fill();
     return bmp;
