@@ -9,6 +9,9 @@ var food;
 var score = 0;
 var enemies;
 var oldOverlaps = {food:{x:-1, y:-1}, enemies:{x:-1, y:-1}};
+var winner = false;
+var loser = false;
+
 //Player
 function Player(start_x, start_y, radius, color) {
     this.radius = radius;
@@ -179,8 +182,7 @@ function create() {
         player.setRadius(playerStartRadius);
         //Update player score
         score = (radius-20) * 10;
-        socket.emit('overlap_enemies', player.index, player.radius);
-
+        socket.emit('new_radius', player.index, player.radius);
     });
 }
 
@@ -196,14 +198,25 @@ function update() {
         game.physics.arcade.overlap(player.bola, enemies, overlapEnemies, null, this);
     }
 
-    if(score > 1000){
+    socket.on('winner',function(){
         game.state.add('level2', level2);
+        game.paused = true;
+        winner = true;
+        setTimeout(function() {
+            game.paused = false;
+            game.state.start('level2');
+        }, 2000);
+    });
+
+    socket.on('loser',function(){
+        game.state.add('level2', level2);
+        loser = true;
         game.paused = true;
         setTimeout(function() {
             game.paused = false;
             game.state.start('level2');
         }, 2000);
-    }
+    });
 
     //player.body.setZeroVelocity();
 
@@ -229,8 +242,11 @@ function render() {
 
     // Score
     game.debug.text("Score: "+ score.toString() , 32, 32, 'black');
-    if(score > 1000){
-        game.debug.text("Loading Level 2" , 400, 300, 'black');
+    if(winner){
+        game.debug.text("YOU WIN! Let's try Level 2" , 300, 300, 'black');
+    }
+    else if(loser){
+        game.debug.text("YOU LOSE! Second chance in Level 2" , 300, 300, 'black');
     }
 
 }

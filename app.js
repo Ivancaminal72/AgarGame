@@ -19,6 +19,8 @@ for(var i=0; i<30; i++){
 
 var players=[];
 
+var lvl2 = false;
+
 var socketIds = [];
 
 function findPlayerIndex(socketId){
@@ -77,6 +79,11 @@ io.on('connection', function(socket){
             players[playerIndex].radius += 1;
             io.emit('update_particle', foodIndex, listFood[foodIndex]);
             io.emit('update_player_size', playerIndex, players[playerIndex].radius);
+            if(((players[playerIndex].radius - 20) * 10 >= 1000) && !lvl2){
+                socket.emit('winner');
+                socket.broadcast.emit('loser');
+                lvl2 = true;
+            }
         }
     });
 
