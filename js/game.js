@@ -125,9 +125,7 @@ function create() {
 
         }
         else{
-            var enemyIndex;
-            if(playerIndex > player.index){enemyIndex=playerIndex-1;}
-            else{enemyIndex=playerIndex;}
+            var enemyIndex = getEnemyIndex(playerIndex);
             console.log("Update Enemie " + enemyIndex + " radius");
             var enemy = enemies.getChildAt(enemyIndex);
             if(!enemy.exists){enemy.revive()}
@@ -146,18 +144,14 @@ function create() {
         }
     });
     socket.on('delete_enemy', function(playerIndex){
-        var enemyIndex;
-        if(playerIndex > player.index){enemyIndex=playerIndex-1;}
-        else{enemyIndex=playerIndex;}
+        var enemyIndex = getEnemyIndex(playerIndex);
         var enemy = enemies.getChildAt(enemyIndex);
         enemy.kill();
     });
 
     socket.on('new_enemy', function (playerIndex, new_enemy) {
         console.log('new_enemy');
-        var enemyIndex;
-        if(playerIndex > player.index){enemyIndex=playerIndex-1;}
-        else{enemyIndex=playerIndex;}
+        var enemyIndex = getEnemyIndex(playerIndex);
         console.log('enemy index: '+enemyIndex);
         console.log('enemy x: '+ new_enemy.position.x +' y: '+ new_enemy.position.y+ ' radius: '+new_enemy.radius);
         var bmpEnemy = createBitmap(new_enemy.radius, '#' + Math.floor(Math.random() * 16777215).toString(16));
@@ -167,9 +161,7 @@ function create() {
 
     socket.on('update_player_position', function(playerIndex, new_x, new_y){
         console.log('position changed');
-        var enemyIndex;
-        if(playerIndex > player.index){enemyIndex=playerIndex-1;}
-        else{enemyIndex=playerIndex;}
+        var enemyIndex =getEnemyIndex(playerIndex);
         var enemy = enemies.getChildAt(enemyIndex);
         enemy.x = new_x;
         enemy.y = new_y;
@@ -184,19 +176,6 @@ function create() {
         score = (radius-20) * 10;
         socket.emit('new_radius', player.index, player.radius);
     });
-}
-
-function update() {
-    if(game.time.now - actionTime > 1000) { //Check this code every 1 second
-        if (player.oldPosition.x != player.bola.x || player.oldPosition.y != player.bola.y) {
-            actionTime = game.time.now;
-            player.oldPosition.x = player.bola.x;
-            player.oldPosition.y = player.bola.y;
-            socket.emit('new_position', player.bola.x, player.bola.y, player.index);
-        }
-        game.physics.arcade.overlap(player.bola, food, overlapFood, null, this);
-        game.physics.arcade.overlap(player.bola, enemies, overlapEnemies, null, this);
-    }
 
     socket.on('winner',function(){
         game.state.add('level2', level2);
@@ -217,6 +196,20 @@ function update() {
             game.state.start('level2');
         }, 2000);
     });
+
+}
+
+function update() {
+    if(game.time.now - actionTime > 1000) { //Check this code every 1 second
+        if (player.oldPosition.x != player.bola.x || player.oldPosition.y != player.bola.y) {
+            actionTime = game.time.now;
+            player.oldPosition.x = player.bola.x;
+            player.oldPosition.y = player.bola.y;
+            socket.emit('new_position', player.bola.x, player.bola.y, player.index);
+        }
+        game.physics.arcade.overlap(player.bola, food, overlapFood, null, this);
+        game.physics.arcade.overlap(player.bola, enemies, overlapEnemies, null, this);
+    }
 
     //player.body.setZeroVelocity();
 
@@ -263,9 +256,7 @@ function overlapFood (oldplayer, deadparticle){
 function overlapEnemies(oldplayer, oldenemy){
     if(oldOverlaps.enemies.x != oldenemy.x || oldOverlaps.enemies.y != oldenemy.y) { //Check if the message is already sent
         var enemyIndex=enemies.getIndex(oldenemy);
-        var playerIndex;
-        if(enemyIndex >= player.index){playerIndex = enemyIndex+1;}
-        else{playerIndex = enemyIndex;}
+        var playerIndex = getPlayerIndex(enemyIndex);
         socket.emit('overlap_enemies', player.index, playerIndex);
         oldOverlaps.enemies.x = oldenemy.x;
         oldOverlaps.enemies.y = oldenemy.y;
@@ -311,4 +302,14 @@ function createBitmap(radius, color) {
     bmp.ctx.closePath();
     bmp.ctx.fill();
     return bmp;
+}
+
+function getEnemyIndex(playerIndex) {
+    if(playerIndex > player.index){return playerIndex-1;}
+    else{return playerIndex;}
+}
+
+function getPlayerIndex(enemyIndex) {
+    if(enemyIndex >= player.index){return enemyIndex+1;}
+    else{return enemyIndex;}
 }

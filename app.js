@@ -109,6 +109,11 @@ io.on('connection', function(socket){
                 io.emit('update_player_size', player2Index, players[player2Index].radius);
             }
         }
+        if(((players[playerIndex].radius - 20) * 10 >= 1000) && !lvl2){
+            socket.emit('winner');
+            socket.broadcast.emit('loser');
+            lvl2 = true;
+        }
     });
 
     socket.on('new_position',function(new_x,new_y,playerIndex){
