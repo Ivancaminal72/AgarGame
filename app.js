@@ -98,13 +98,13 @@ io.on('connection', function(socket){
         if(distance <= minimumDistance){ //Correct overlap
             if(players[playerIndex].radius > players[player2Index].radius){
                 console.log('dead player index: '+player2Index);
-                players[playerIndex].radius += players[player2Index].radius;
+                players[playerIndex].radius += players[player2Index].radius-19;
                 io.to(players[player2Index].socketId).emit('player_killed');
                 io.emit('update_player_size', playerIndex, players[playerIndex].radius);
             }
             else if(players[playerIndex].radius < players[player2Index].radius){
                 console.log('dead player index: '+playerIndex);
-                players[player2Index].radius += players[playerIndex].radius;
+                players[player2Index].radius += players[playerIndex].radius-19;
                 socket.emit('player_killed');
                 io.emit('update_player_size', player2Index, players[player2Index].radius);
             }
