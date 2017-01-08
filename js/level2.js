@@ -108,16 +108,16 @@ var level2 = {
         player.setVelocityY(0);
 
         if (cursors.up.isDown) {
-            player.setVelocityY(-velocityPlayer);
+            player.setVelocityY(-velocityPlayer+score/5);
         } else if (cursors.down.isDown) {
-            player.setVelocityY(velocityPlayer);
+            player.setVelocityY(velocityPlayer-score/5);
         }
 
         if (cursors.left.isDown)
         {
-            player.setVelocityX(-velocityPlayer);
+            player.setVelocityX(-velocityPlayer+score/5);
         } else if (cursors.right.isDown) {
-            player.setVelocityX(velocityPlayer);
+            player.setVelocityX(velocityPlayer-score/5);
         }
 
     },
