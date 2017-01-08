@@ -217,7 +217,7 @@ function create() {
 
 function update() {
 
-    if(game.time.now - actionTime > 1000) { //Check this code every 1 second
+    //if(game.time.now - actionTime > 1000) { //Check this code every 1 second
         if (player.oldPosition.x != player.bola.x || player.oldPosition.y != player.bola.y) {
             actionTime = game.time.now;
             player.oldPosition.x = player.bola.x;
@@ -226,7 +226,7 @@ function update() {
         }
         game.physics.arcade.overlap(player.bola, food, overlapFood, null, this);
         game.physics.arcade.overlap(player.bola, enemies, overlapEnemies, null, this);
-    }
+    //}
 
     player.setVelocityX(0);
     player.setVelocityY(0);

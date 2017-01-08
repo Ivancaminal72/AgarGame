@@ -108,7 +108,7 @@ var level2 = {
 
     update: function() {
 
-        if(game.time.now - actionTime > 1000) { //Check this code every 1 second
+        //if(game.time.now - actionTime > 1000) { //Check this code every 1 second
             if (player.oldPosition.x != player.bola.x || player.oldPosition.y != player.bola.y) {
                 actionTime = game.time.now;
                 player.oldPosition.x = player.bola.x;
@@ -117,7 +117,7 @@ var level2 = {
             }
             game.physics.arcade.overlap(player.bola, food, overlapFood, null, this);
             game.physics.arcade.overlap(player.bola, enemies, overlapEnemies, null, this);
-        }
+        //}
 
         if (game.physics.arcade.collide(player.bola, wall1.sprite) || game.physics.arcade.collide(player.bola, wall2.sprite) || game.physics.arcade.collide(player.bola, wall3.sprite)){
             loser = true;
@@ -154,9 +154,11 @@ var level2 = {
 
         if(winner){
             game.debug.text("GAME OVER! Well done!" , 300, 300, 'white');
+            game.state.stop()
         }
         else if(loser){
             game.debug.text("GAME OVER! You loser!" , 300, 300, 'white');
+            game.state.stop()
         }
 
     },
