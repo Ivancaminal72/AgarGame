@@ -10,7 +10,13 @@ var level2 = {
     create: function(){
 
         game.add.tileSprite(0, 0, 1600, 1200, 'background_black');
-        score = 0
+        score = 0;
+        winner = false;
+        loser = false;
+
+        wall1 = new Wall(200,200);
+        wall2 = new Wall(1000,200);
+        wall3 = new Wall(600,600);
 
         cursors = game.input.keyboard.createCursorKeys();
 
@@ -89,6 +95,15 @@ var level2 = {
             socket.emit('new_radius', player.index, player.radius);
         });
 
+        socket.on('winner',function(){
+            winner = true;
+        });
+
+        socket.on('loser',function(){
+            loser = true;
+        });
+
+
     },
 
     update: function() {
@@ -102,6 +117,11 @@ var level2 = {
             }
             game.physics.arcade.overlap(player.bola, food, overlapFood, null, this);
             game.physics.arcade.overlap(player.bola, enemies, overlapEnemies, null, this);
+        }
+
+        if (game.physics.arcade.collide(player.bola, wall1.sprite) || game.physics.arcade.collide(player.bola, wall2.sprite) || game.physics.arcade.collide(player.bola, wall3.sprite)){
+            loser = true;
+            socket.emit('game_over', false);
         }
 
         player.setVelocityX(0);
@@ -120,12 +140,24 @@ var level2 = {
             player.setVelocityX(velocityPlayer-score/5);
         }
 
+        if (score >= 600){
+            winner = true;
+            socket.emit('game_over', true);
+        }
+
     },
 
     render: function() {
 
         // Score
         game.debug.text("Score: "+ score.toString() , 32, 32, 'white');
+
+        if(winner){
+            game.debug.text("GAME OVER! Well done!" , 300, 300, 'white');
+        }
+        else if(loser){
+            game.debug.text("GAME OVER! You loser!" , 300, 300, 'white');
+        }
 
     },
 

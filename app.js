@@ -77,7 +77,7 @@ io.on('connection', function(socket){
             players[playerIndex].radius += 1;
             io.emit('update_particle', foodIndex, listFood[foodIndex]);
             io.emit('update_player_size', playerIndex, players[playerIndex].radius);
-            if(((players[playerIndex].radius - 20) * 10 >= 1000) && !lvl2){
+            if(((players[playerIndex].radius - 20) * 10 >= 600) && !lvl2){
                 socket.emit('winner');
                 socket.broadcast.emit('loser');
                 lvl2 = true;
@@ -102,7 +102,7 @@ io.on('connection', function(socket){
                 players[playerIndex].radius += players[player2Index].radius-19;
                 io.to(players[player2Index].socketId).emit('player_killed');
                 io.emit('update_player_size', playerIndex, players[playerIndex].radius);
-                if(((players[playerIndex].radius - 20) * 10 >= 1000) && !lvl2){
+                if(((players[playerIndex].radius - 20) * 10 >= 600) && !lvl2){
                     socket.emit('winner');
                     socket.broadcast.emit('loser');
                     lvl2 = true;
@@ -116,7 +116,7 @@ io.on('connection', function(socket){
                 players[player2Index].radius += players[playerIndex].radius-19;
                 socket.emit('player_killed');
                 io.emit('update_player_size', player2Index, players[player2Index].radius);
-                if(((players[player2Index].radius - 20) * 10 >= 1000) && !lvl2){
+                if(((players[player2Index].radius - 20) * 10 >= 600) && !lvl2){
                     socket.emit('winner');
                     socket.broadcast.emit('loser');
                     lvl2 = true;
@@ -137,6 +137,15 @@ io.on('connection', function(socket){
     socket.on('new_radius',function(playerIndex, radius){
         players[playerIndex].radius = radius;
         io.emit('update_player_size', playerIndex, players[playerIndex].radius);
+    });
+
+    socket.on('game_over',function(winner){
+        if(winner) {
+            socket.broadcast.emit('loser');
+        }
+        else {
+            socket.broadcast.emit('winner');
+        }
     });
 
     socket.on('disconnect', function(){

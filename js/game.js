@@ -11,6 +11,7 @@ var enemies;
 var oldOverlaps = {food:{x:-1, y:-1}, enemies:{x:-1, y:-1}};
 var winner = false;
 var loser = false;
+var wall1, wall2, wall3;
 
 //Player
 function Player(start_x, start_y, radius, color) {
@@ -53,6 +54,22 @@ Player.prototype.setRadius = function(radius){
     this.bola.key.update();
 };
 
+var Wall = function(pos_x, pos_y){
+    this.bmd = game.add.bitmapData(20,400);
+
+    // draw to the canvas context like normal
+    this.bmd.ctx.beginPath();
+    this.bmd.ctx.rect(0,0,20,400);
+    this.bmd.ctx.fillStyle = '#ff0000';
+    this.bmd.ctx.fill();
+
+    // use the bitmap data as the texture for the sprite
+    this.sprite = game.add.sprite(pos_x, pos_y, this.bmd);
+    game.physics.arcade.enable(this.sprite);
+    this.sprite.body.collideWorldBounds = true;
+    this.sprite.body.immovable = true;
+};
+
 //Communication socket io
 var socket = io();
 var actionTime = 0;
@@ -74,24 +91,6 @@ function create() {
     game.add.tileSprite(0, 0, 1600, 1200, 'background_white');
     game.world.setBounds(0, 0, 1600, 1200);
     game.physics.startSystem(Phaser.Physics.ARCADE);
-
-    /*
-     var Barrera = function(pos_x, pos_y){
-     this.color_barrera = "#336699";
-     this.position = {x:pos_x, y:pos_y};
-     this.size = {w:20, h:20};
-     var bmpBarrera = game.add.bitmapData(2*this.size.w,2*this.size.h);
-     bmpBarrera.ctx.fillStyle = this.color_barrera;
-     bmpBarrera.ctx.fillRect(   this.position.x,
-     this.position.y,
-     this.size.w,
-     this.size.h);
-     this.barrera = game.add.sprite(game.world.centerX, game.world.centerY, bmpBarrera);
-     game.physics.arcade.enable(this.barrera);
-     this.barrera.body.collideWorldBounds = true;
-     };
-     var barrera = new Barrera(80/2,60/2);
-     barrera.barrera;*/
 
     player = new Player(game.world.randomX,game.world.randomY,playerStartRadius,'#ff9999');
 
