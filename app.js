@@ -21,8 +21,6 @@ var players=[];
 
 var lvl2 = false;
 
-var socketIds = [];
-
 function findPlayerIndex(socketId){
     for(var n=0; n<players.length; n++){
         if(socketId==players[n].socketId){
@@ -83,6 +81,9 @@ io.on('connection', function(socket){
                 socket.emit('winner');
                 socket.broadcast.emit('loser');
                 lvl2 = true;
+                for(k=0; k<players.length; k++){
+                    players[k].radius = 20;
+                }
             }
         }
     });
@@ -101,18 +102,29 @@ io.on('connection', function(socket){
                 players[playerIndex].radius += players[player2Index].radius-19;
                 io.to(players[player2Index].socketId).emit('player_killed');
                 io.emit('update_player_size', playerIndex, players[playerIndex].radius);
+                if(((players[playerIndex].radius - 20) * 10 >= 1000) && !lvl2){
+                    socket.emit('winner');
+                    socket.broadcast.emit('loser');
+                    lvl2 = true;
+                    for(k=0; k<players.length; k++){
+                        players[k].radius = 20;
+                    }
+                }
             }
             else if(players[playerIndex].radius < players[player2Index].radius){
                 console.log('dead player index: '+playerIndex);
                 players[player2Index].radius += players[playerIndex].radius-19;
                 socket.emit('player_killed');
                 io.emit('update_player_size', player2Index, players[player2Index].radius);
+                if(((players[player2Index].radius - 20) * 10 >= 1000) && !lvl2){
+                    socket.emit('winner');
+                    socket.broadcast.emit('loser');
+                    lvl2 = true;
+                    for(k=0; k<players.length; k++){
+                        players[k].radius = 20;
+                    }
+                }
             }
-        }
-        if(((players[playerIndex].radius - 20) * 10 >= 1000) && !lvl2){
-            socket.emit('winner');
-            socket.broadcast.emit('loser');
-            lvl2 = true;
         }
     });
 
@@ -146,5 +158,3 @@ setTimeout(function() {
 http.listen(3000, function(){
     console.log('listening on *:3000');
 });
-
-

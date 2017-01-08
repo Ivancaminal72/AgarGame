@@ -94,11 +94,13 @@ function create() {
      barrera.barrera;*/
 
     player = new Player(game.world.randomX,game.world.randomY,playerStartRadius,'#ff9999');
+
     socket.on('index', function (index) {
         console.log("new player index: " + index);
         player.index=index;
     });
     socket.emit('new_player',player.bola.x,player.bola.y,player.radius);
+
     cursors = game.input.keyboard.createCursorKeys();
 
     //  Notice that the sprite doesn't have any momentum at all,
@@ -106,8 +108,11 @@ function create() {
     //  0.1 is the amount of linear interpolation to use.
     //  The smaller the value, the smooth the camera (and the longer it takes to catch up)
     game.camera.follow(player.bola, Phaser.Camera.FOLLOW_LOCKON, 0.1, 0.1);
-    game.world.bringToTop(food);
-    game.world.bringToTop(enemies);
+
+    setTimeout(function() {
+        game.world.bringToTop(food);
+        game.world.bringToTop(enemies);
+    }, 200);
 
     socket.on('update_particle', function(foodIndex, new_food){
         console.log('particle killed');
@@ -115,6 +120,7 @@ function create() {
         particle.x = new_food.x;
         particle.y = new_food.y;
     });
+
     socket.on('update_player_size', function(playerIndex, radius){
         if(playerIndex == player.index){
             console.log("Update Player size: " + radius);
@@ -143,6 +149,7 @@ function create() {
             enemy.key.update();
         }
     });
+
     socket.on('delete_enemy', function(playerIndex){
         var enemyIndex = getEnemyIndex(playerIndex);
         var enemy = enemies.getChildAt(enemyIndex);
@@ -173,7 +180,7 @@ function create() {
         player.bola.y=game.world.randomY;
         player.setRadius(playerStartRadius);
         //Update player score
-        score = (radius-20) * 10;
+        score = (player.radius-20) * 10;
         socket.emit('new_radius', player.index, player.radius);
     });
 
@@ -183,7 +190,12 @@ function create() {
         winner = true;
         setTimeout(function() {
             game.paused = false;
-            game.state.start('level2');
+            player.setRadius(20);
+            socket.emit('new_radius', player.index, player.radius);
+            player.bola.x = game.world.randomX;
+            player.bola.y = game.world.randomY;
+            socket.emit('new_position', player.bola.x, player.bola.y, player.index);
+            game.state.start('level2',false,false,player,enemies,food);
         }, 2000);
     });
 
@@ -193,13 +205,19 @@ function create() {
         game.paused = true;
         setTimeout(function() {
             game.paused = false;
-            game.state.start('level2');
+            player.setRadius(20);
+            socket.emit('new_radius', player.index, player.radius);
+            player.bola.x = game.world.randomX;
+            player.bola.y = game.world.randomY;
+            socket.emit('new_position', player.bola.x, player.bola.y, player.index);
+            game.state.start('level2',false,false,player,enemies,food);
         }, 2000);
     });
 
 }
 
 function update() {
+
     if(game.time.now - actionTime > 1000) { //Check this code every 1 second
         if (player.oldPosition.x != player.bola.x || player.oldPosition.y != player.bola.y) {
             actionTime = game.time.now;
@@ -210,8 +228,6 @@ function update() {
         game.physics.arcade.overlap(player.bola, food, overlapFood, null, this);
         game.physics.arcade.overlap(player.bola, enemies, overlapEnemies, null, this);
     }
-
-    //player.body.setZeroVelocity();
 
     player.setVelocityX(0);
     player.setVelocityY(0);
